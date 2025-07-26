@@ -1,0 +1,47 @@
+{
+    "name": "ababilitworld/flex-authorization",
+    "description": "A flexible, Composer-managed, package to Interactive Flex Theme Settings etc used in wordpress plugins by following modern WordPress and OOP PHP best practices by Ababil IT Hub.",
+    "keywords": ["FlexAuthorization","flex-authorization","plugin","wordpress", "php"],
+    "type": "library",
+    "license": "MIT",
+    "license_uri": "https://opensource.org/licenses/MIT",
+    "authors": [
+        {
+            "name": "Ababil It Hub",
+            "email": "ababilithub@gmail.com",
+            "homepage": "https://ababilithub.com/"
+        },
+        {
+            "name": "Md Shafiul Alam",
+            "email": "cse.shafiul@gmail.com",
+            "homepage": "https://ababilithub.com/"
+        },
+        {
+            "name": "Premium Addons",
+            "email": "premiumaddons@gmail.com",
+            "homepage": "https://ababilithub.com/"
+        }
+    ],
+    "autoload": {
+        "psr-4": {
+            "Ababilithub\\FlexAuthorization\\": "src/"
+        },
+        "files": [
+            "includes.php"
+        ]
+    },
+    "require-dev": {
+        
+     },
+    "autoload-dev": {
+        "psr-4": {
+            "Ababilithub\\FlexAuthorization\\": "Test/"
+        }
+    },
+    "repositories": [
+        {
+            "type": "vcs",
+            "url": "https://github.com/ababilitworld/flex-authorization"
+        }
+    ]
+}
