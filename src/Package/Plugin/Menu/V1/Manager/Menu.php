@@ -33,9 +33,9 @@ class  Menu extends BaseManager
                 // ImportantLinkMenu::class,
                 // ColorSchemeMenu::class,
                 // TypographyMenu::class,
-                OptionBoxMenu::class,
-                WordpressDevelopmentRoadmapMenu::class,
-                SystemStatusMenu::class,                    
+                // OptionBoxMenu::class,
+                // WordpressDevelopmentRoadmapMenu::class,
+                // SystemStatusMenu::class,                    
             ]
         );
     }
