@@ -1,12 +1,12 @@
 <?php
-namespace Ababilithub\FlexAuthorization\Package\Plugin\Menu\V1\Concrete\Posttype\Permission;
+namespace Ababilithub\FlexAuthorization\Package\Plugin\Menu\V1\Concrete\Posttype\Role;
 
 (defined( 'ABSPATH' ) && defined( 'WPINC' )) || exit();
 
 use Ababilithub\{
     FlexPhp\Package\Mixin\V1\Standard\Mixin as StandardMixin,
     FlexWordpress\Package\Menu\V1\Base\Menu as BaseMenu,
-    FlexAuthorization\Package\Plugin\Posttype\V1\Concrete\Permission\Posttype as PermissionPosttype
+    FlexAuthorization\Package\Plugin\Posttype\V1\Concrete\Role\Posttype as RolePosttype
 };
 
 use const Ababilithub\{
@@ -48,10 +48,10 @@ if (!class_exists(__NAMESPACE__.'\Menu'))
             $menu_items[] = [
                 'type' => 'submenu',
                 'parent_slug' => 'flex-authorization',
-                'page_title' => 'Permission',
-                'menu_title' => 'Permission',
+                'page_title' => 'Role',
+                'menu_title' => 'Role',
                 'capability' => 'manage_options',
-                'menu_slug' => [$this,'render_submenu'],//'edit.php?post_type='.PermissionPosttype::POSTTYPE,
+                'menu_slug' => [$this,'render_submenu'],//'edit.php?post_type='.RolePosttype::POSTTYPE,
                 'callback' => '',
                 'position' => 1,
             ];
