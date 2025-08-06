@@ -51,8 +51,8 @@ if (!class_exists(__NAMESPACE__.'\Menu'))
                 'page_title' => 'Role',
                 'menu_title' => 'Role',
                 'capability' => 'manage_options',
-                'menu_slug' => [$this,'render_submenu'],//'edit.php?post_type='.RolePosttype::POSTTYPE,
-                'callback' => '',
+                'menu_slug' => 'flex-authorization-role',//'edit.php?post_type='.RolePosttype::POSTTYPE,
+                'callback' => [$this, 'render_submenu'],
                 'position' => 1,
             ];
 

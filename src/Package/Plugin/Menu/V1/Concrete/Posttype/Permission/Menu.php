@@ -51,8 +51,8 @@ if (!class_exists(__NAMESPACE__.'\Menu'))
                 'page_title' => 'Permission',
                 'menu_title' => 'Permission',
                 'capability' => 'manage_options',
-                'menu_slug' => [$this,'render_submenu'],//'edit.php?post_type='.PermissionPosttype::POSTTYPE,
-                'callback' => '',
+                'menu_slug' => 'flex-authorization-permission',//'edit.php?post_type='.PermissionPosttype::POSTTYPE,
+                'callback' => [$this, 'render_submenu'],
                 'position' => 1,
             ];
 

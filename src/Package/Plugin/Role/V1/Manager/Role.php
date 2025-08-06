@@ -7,6 +7,7 @@ use Ababilithub\{
     FlexPhp\Package\Manager\V1\Base\Manager as BaseManager,
     FlexAuthorization\Package\Plugin\Role\V1\Contract\Role as RoleContract, 
     FlexAuthorization\Package\Plugin\Role\V1\Factory\Role as RoleFactory,
+    FlexAuthorization\Package\Plugin\Role\V1\Concrete\SuperAdministrator\Role as SuperAdministratorRole,
     FlexAuthorization\Package\Plugin\Role\V1\Concrete\DirectorAdmin\Role as DirectorAdminRole,
 };
 
@@ -21,6 +22,7 @@ class  Role extends BaseManager
     {
         $this->set_items(
             [
+                SuperAdministratorRole::class,
                 DirectorAdminRole::class,                   
             ]
         );
@@ -32,9 +34,11 @@ class  Role extends BaseManager
         {
             $item_instance = RoleFactory::get($item);
 
+            //echo "<pre>";print_r($item_instance);echo "</pre>";exit;
+
             if ($item_instance instanceof RoleContract) 
             {
-                $item_instance->register();
+                $item_instance->init()->register();
             }
         }
     }

@@ -40,14 +40,14 @@ if (!class_exists(__NAMESPACE__.'\Production'))
             // add_action('init', function () {
             //     (new OptionBoxManager())->boot();
             // });
-            
+
+            add_action('init', function() {
+                (new RoleManager())->boot();
+            });
+
             // Initialize only once on admin_menu
             add_action('init', function () {
                 (new MenuManager())->boot();
-            });
-
-            add_action('init', function () {
-                (new RoleManager())->boot();
             });
 
         }

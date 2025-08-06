@@ -1,29 +1,30 @@
 <?php
-// factories/AuthorizationFactory.php
-class AuthorizationFactory {
-    public static function create(string $driver = 'database'): AuthorizationContract {
-        switch ($driver) {
-            case 'database':
-                return self::createDatabaseAuthorization();
-            // case 'api': future implementations
-            default:
-                throw new InvalidArgumentException("Unsupported driver: {$driver}");
+namespace Ababilithub\FlexAuthorization\Package\Plugin\Auth\V1\Factory;
+
+(defined('ABSPATH') && defined('WPINC')) || exit();
+
+use Ababilithub\{
+    FlexPhp\Package\Factory\V1\Base\Factory as BaseFactory,
+    FlexAuthorization\Package\Plugin\Auth\V1\Contract\Auth as AuthContract,
+};
+
+class Auth extends BaseFactory
+{
+    /**
+     * Resolve the shortcode class instance
+     *
+     * @param string $targetClass
+     * @return AuthContract
+     */
+    protected static function resolve(string $targetClass): AuthContract
+    {
+        $instance = new $targetClass();
+
+        if (!$instance instanceof AuthContract) 
+        {
+            throw new \InvalidArgumentException("{$targetClass} must implement AuthContract");
         }
-    }
 
-    private static function createDatabaseAuthorization(): AuthorizationContract {
-        $permissionRepository = new DatabasePermissionRepository();
-        $roleRepository = new DatabaseRoleRepository();
-        $userRepository = new DatabaseUserRepository();
-
-        $permissionManager = new DatabasePermissionManager($permissionRepository);
-        $roleManager = new DatabaseRoleManager($roleRepository);
-        $userManager = new DatabaseUserManager($roleRepository, $permissionRepository);
-
-        return new AuthorizationService(
-            $permissionManager,
-            $roleManager,
-            $userManager
-        );
+        return $instance;
     }
 }

@@ -1,5 +1,5 @@
 <?php 
-namespace Ababilithub\FlexAuthorization\Package\Plugin\Role\V1\Concrete\DirectorAdmin;
+namespace Ababilithub\FlexAuthorization\Package\Plugin\Role\V1\Concrete\SuperAdministrator;
 
 (defined('ABSPATH') && defined('WPINC')) || exit();
 
@@ -11,36 +11,16 @@ class Role extends BaseRole
 {
     public function init(array $data = []): static
     {
-        $this->role_slug = 'director-admin';
-        $this->display_name = 'Director Admin';
+        $this->role_slug = 'super-admin';
+        $this->display_name = 'Super Admin';
         
-        // Set specific capabilities for this role
-        $this->capabilities = array_merge($this->get_default_capabilities(),[
-            'flex_eland' => true,
-            'flex_eland_deed' => true,
-
-            'upload_files' => true,
-
-            'read' => true,
-            'read_fldeed' => true,
-            //'read_private_fldeeds' => true,
-
-            'edit_fldeed' => true,
-            'edit_fldeeds' => true,
-            //'edit_private_fldeeds' => true,
-            'edit_others_fldeeds' => true,            
-            'edit_published_fldeeds' => true,
-
-            'publish_fldeeds' => true,
-            
-            'delete_fldeed' => true,            
-            'delete_fldeeds' => true,
-            //'delete_private_fldeeds' => true,            
-            'delete_others_fldeeds' => true,
-            'delete_published_fldeeds' => true,                  
-    
-        ]);
-
+        $this->remove_role();
+        // Get all capability names
+        $capability_names = $this->get_all_possible_capabilities();
+        
+        // Transform into associative array with all capabilities enabled
+        $this->capabilities = array_fill_keys($capability_names, true);
+        //echo "<pre>";print_r($this->capabilities);echo "</pre>";exit;
         $this->allowed_menus = array_merge([],[
             base64_encode('admin.php?page=flex-eland') => true,
             //base64_encode('edit.php?post_type=fldeed') => true // Add as main menu
@@ -58,16 +38,16 @@ class Role extends BaseRole
 
     protected function init_hooks(): void
     {
-        add_filter(
-            'ababilithub_role_director_admin_redirect_url', 
-            [$this, 'filter_director_admin_redirect_url'], 
-            10, 
-            3
-        );
+        // add_filter(
+        //     'ababilithub_role_super_admin_redirect_url', 
+        //     [$this, 'filter_super_admin_redirect_url'], 
+        //     10, 
+        //     3
+        // );
 
-        add_action('admin_init', [$this, 'handle_admin_redirect']);
-        add_action('admin_menu', [$this, 'filter_admin_menu'], 999);
-        add_action('wp_dashboard_setup', [$this, 'dashboard_setup'], 999);
+        //add_action('admin_init', [$this, 'handle_admin_redirect']);
+        //add_action('admin_menu', [$this, 'filter_admin_menu'], 999);
+        //add_action('wp_dashboard_setup', [$this, 'dashboard_setup'], 999);
     }
 
     public function filter_admin_menu(): void
@@ -85,11 +65,10 @@ class Role extends BaseRole
             $encoded_menu_slug = base64_encode($menu_slug);
             if (!isset($this->capabilities[$menu_capability]) && !isset($this->allowed_menus[$encoded_menu_slug])) 
             {              
-                remove_menu_page($menu_slug);
+                //remove_menu_page($menu_slug);
             }
         }
-
-        //echo "<pre>";print_r($submenu);echo "</pre>";
+        
         foreach ($submenu as $parent_slug => $submenu_items) 
         {
             foreach ($submenu_items as $subindex => $submenu_item) 
@@ -99,41 +78,12 @@ class Role extends BaseRole
                 $encoded_submenu_slug = base64_encode($submenu_slug);
                 if (!isset($this->capabilities[$submenu_capability]) && !isset($this->allowed_submenus[$encoded_submenu_slug])) 
                 { 
-                    remove_submenu_page($parent_slug, $submenu_slug);
+                    //remove_submenu_page($parent_slug, $submenu_slug);
                 }
             }
         }
-        // echo "<pre>";print_r($this->get_all_capabilities_grouped());echo "</pre>";
-        // exit;
         
     }
-
-    public function admin_redirect(): void
-    {
-        if (!current_user_can($this->role_slug)) 
-        {
-            return;
-        }
-        
-        // Get current page and screen
-        $current_page = $_GET['page'] ?? '';
-        $screen = get_current_screen();
-        
-        // Only redirect if not already on an allowed page
-        $allowed_pages = [
-            'flex-eland',
-            'edit-fldeed',
-            'fldeed',
-            'post-new.php?post_type=fldeed'
-        ];
-
-        if (!$screen || !in_array($screen->id, $allowed_pages)) 
-        {
-            wp_safe_redirect(admin_url('edit.php?post_type=fldeed'));
-            exit;
-        }
-    }
-
 
     public function dashboard_setup(): void
     {
@@ -154,7 +104,37 @@ class Role extends BaseRole
         }
     }
 
-    public function filter_director_admin_redirect_url(
+    public function dashboard_setup_p(): void
+    {
+        if (current_user_can($this->role_slug)) 
+        {
+            global $wp_meta_boxes;
+            
+            // Remove only unnecessary widgets
+            $keep_widgets = [
+                'dashboard_activity',
+                'dashboard_right_now',
+                'dashboard_site_health',
+                'dashboard_quick_press'
+            ];
+            
+            foreach ($wp_meta_boxes['dashboard'] as $context => $priority_array) 
+            {
+                foreach ($priority_array as $priority => $boxes) 
+                {
+                    foreach ($boxes as $id => $data) 
+                    {
+                        if (!in_array($id, $keep_widgets)) 
+                        {
+                            remove_meta_box($id, 'dashboard', $context);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    public function filter_super_admin_redirect_url(
         string $url,
         string $role_slug,
         $role_instance
@@ -229,7 +209,7 @@ class Role extends BaseRole
 
         // Apply the redirect URL filter and ensure it's a full URL
         $redirect_path = apply_filters(
-            'ababilithub_role_director_admin_redirect_url',
+            'ababilithub_role_super_admin_redirect_url',
             'admin.php?page=flex-eland',
             $this->role_slug,
             $this

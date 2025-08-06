@@ -1,224 +1,226 @@
 <?php
-namespace Ababilithub\FlexWordpress\Package\Auth\V1\Mixin;
-
-(defined('ABSPATH') && defined('WPINC')) || exit();
-
-trait Auth 
+namespace Ababilithub\FlexAuthorization\Package\Plugin\Mixin;
+    
+trait Auth
 {
-    private static $post_type_cache = [];
-    private static $menu_cache = [];
-    private static $submenu_cache = null;
-    private $auth_config = [];
 
-    /**
-     * Initialize the access control system
-     *
-     * @param array $config {
-     *     @type string   $post_type       Required. The post type to control
-     *     @type array    $hidden_actions  Row actions to hide (default: ['duplicate'])
-     *     @type array    $hidden_views    Views to hide (default: ['all', 'publish', 'draft'])
-     *     @type bool     $hide_add_new    Whether to hide "Add New" button (default: true)
-     *     @type array    $allowed_caps    Capabilities that bypass restrictions (default: ['administrator'])
-     *     @type array    $required_caps   Required capabilities to see elements (default: ['create_posts'])
-     *     @type bool     $cache_enabled   Whether to enable menu/post type caching (default: true)
-     * }
-     */
-    public function init_auth(array $config) 
-    {
-        $this->auth_config = wp_parse_args($config, [
-            'hidden_actions' => ['duplicate'],
-            'hidden_views'   => ['all', 'publish', 'draft'],
-            'hide_add_new'  => true,
-            'allowed_caps'  => ['administrator'],
-            'required_caps' => ['create_posts'],
-            'cache_enabled' => true,
-        ]);
-
-        add_filter('post_row_actions', [$this, 'filter_row_actions'], 10, 2);
-        add_filter("views_edit-{$this->auth_config['post_type']}", [$this, 'filter_views']);
+    //Roles functionalities
+    public function get_all_roles(): array|null 
+    {	
+        global $wp_roles;
+                        
+        $roles = null;
         
-        if ($this->auth_config['hide_add_new']) {
-            add_action('admin_head', [$this, 'hide_add_new_button']);
+        if ($wp_roles && property_exists($wp_roles, 'roles')) 
+        {
+            $roles = $wp_roles->roles;					
+        }
+
+        return $roles;				
+    }
+
+    public function user_has_role($role): bool 
+    { 
+        if( is_user_logged_in() ) 
+        {			   
+            $user = wp_get_current_user();
+        
+            $roles = ( array ) $user->roles;
+
+            if(in_array($role,$roles))
+            {
+                return true;
+            }
+            else
+            {
+                return false;
+            }	   
+        } 
+        else
+        {			   
+            return false;			   
+        }
+        
+    }
+
+    public function add_roles($roles): void 
+    {
+        // $roles = array(
+        // 	'tour_manager' => __( 'Booking Manager' ),
+        // );
+
+        foreach ($roles as $role => $display_name) 
+        {
+            //remove_role($role);
+            add_role($role, $display_name);
         }
     }
 
-    // Post Type Capabilities
-    public function get_caps($post_type): mixed 
+    public function remove_roles($roles): void 
     {
-        if ($this->use_cache() && isset(self::$post_type_cache[$post_type])) 
+        foreach ($roles as $role) 
         {
-            return self::$post_type_cache[$post_type];
+            remove_role($role);
         }
+    }
 
-        global $wp_post_types;
-        
-        if (!isset($wp_post_types[$post_type])) 
+    public function user_has_capability($capability): bool 
+    { 
+        if(current_user_can($capability))
+        {
+            return true;
+        }
+        else
         {
             return false;
         }
-
-        $caps = get_object_vars($wp_post_types[$post_type]->cap);
         
-        if ($this->use_cache()) 
-        {
-            self::$post_type_cache[$post_type] = $caps;
-        }
-        
-        return $caps;
     }
 
-    // Menu Management
-    public function get_menus($post_type): mixed 
-    {
-        $cache_key = 'menus_' . $post_type;
-        
-        if ($this->use_cache() && isset(self::$menu_cache[$cache_key])) 
+    public function add_capabilities_to_roles(array $capabilities, array $roles): void 
+    {				
+        foreach ($roles as $role) 
         {
-            return self::$menu_cache[$cache_key];
-        }
-
-        $this->load_menus();
-        $menus = [];
-        $target = 'post_type=' . $post_type;
-
-        foreach (self::$menu_cache['main'] as $item) 
-        {
-            if (strpos($item[2], $target) === false) continue;
-
-            $slug = $item[2];
-            $menus[] = $this->format_menu_item($item, $slug);
-
-            if (isset(self::$submenu_cache[$slug])) 
+            $role_object = get_role($role);
+            if ($role_object) 
             {
-                foreach (self::$submenu_cache[$slug] as $subitem) 
+                foreach ($capabilities as $capability) 
                 {
-                    $menus[] = $this->format_menu_item($subitem, $subitem[2]);
+                    $role_object->add_cap($capability);
+                }
+            }
+
+        }
+        
+    }
+
+    public function remove_capabilities_from_roles(array $capabilities, array $roles): void 
+    {
+
+        foreach ($roles as $role) 
+        {
+            $role_object = get_role($role);
+            if ($role_object) 
+            {
+                foreach ($capabilities as $capability) 
+                {
+                    $role_object->remove_cap($capability);
                 }
             }
         }
-
-        if ($this->use_cache()) 
-        {
-            self::$menu_cache[$cache_key] = $menus;
-        }
-        return $menus;
-    }
-
-    public function get_menu_caps($post_type): mixed 
-    {
-        $cache_key = 'caps_' . $post_type;
         
-        if ($this->use_cache() && isset(self::$menu_cache[$cache_key])) 
-        {
-            return self::$menu_cache[$cache_key];
-        }
-
-        $this->load_menus();
-        $caps = [];
-        $target = 'post_type=' . $post_type;
-
-        foreach (self::$menu_cache['main'] as $item) 
-        {
-            if (strpos($item[2], $target) === false) continue;
-
-            $slug = $item[2];
-            $caps[$this->encode_slug($slug)] = $item[1];
-
-            if (isset(self::$submenu_cache[$slug])) 
-            {
-                foreach (self::$submenu_cache[$slug] as $subitem) 
-                {
-                    $caps[$this->encode_slug($subitem[2])] = $subitem[1];
-                }
-            }
-        }
-
-        if ($this->use_cache()) 
-        {
-            self::$menu_cache[$cache_key] = $caps;
-        }
-        return $caps;
     }
 
-    // Access Control Filters
-    public function filter_row_actions($actions, $post): mixed 
+    public function clone_role($from_role,$to_roles): void
     {
-        if ($post->post_type === $this->auth_config['post_type'] && $this->needs_restriction()) 
-        {
-            foreach ($this->auth_config['hidden_actions'] as $action) 
-            {
-                unset($actions[$action]);
-            }
-        }
-        return $actions;
-    }
+        $from_role = get_role($from_role);
+        $from_role_caps = array_keys( $from_role->capabilities );        
 
-    public function filter_views($views): mixed 
-    {
-        if ($this->needs_restriction()) 
+        foreach($to_roles as $new_role)
         {
-            foreach ($this->auth_config['hidden_views'] as $view) 
+            unset($role);
+            $role = get_role($new_role);
+            foreach ( $from_role_caps as $cap ) 
             {
-                unset($views[$view]);
-            }
+                $role->add_cap( $cap );
+            }					
         }
-        return $views;
     }
-
-    public function hide_add_new_button(): void 
+    
+    /**
+     * Get all capabilities as a flat unique sorted array
+     */
+    public function get_all_possible_capabilities(): array 
     {
-        global $current_screen;
+        $grouped = $this->get_all_capabilities_grouped();
+        $capabilities = [];
         
-        if ($current_screen->post_type === $this->auth_config['post_type'] && $this->needs_restriction()) 
-        {
-            echo '<style>.page-title-action { display: none !important; }</style>';
+        foreach ($grouped['roles'] as $role_caps) {
+            $capabilities = array_merge($capabilities, $role_caps);
         }
+        
+        foreach ($grouped['post_types'] as $post_type_caps) {
+            $capabilities = array_merge($capabilities, $post_type_caps);
+        }
+        
+        foreach ($grouped['taxonomies'] as $taxonomy_caps) {
+            $capabilities = array_merge($capabilities, $taxonomy_caps);
+        }
+        
+        $capabilities = array_merge($capabilities, $grouped['core']);
+        
+        $capabilities = array_unique(array_filter($capabilities));
+        sort($capabilities);
+        
+        return $capabilities;
     }
 
-    // Core Checks
-    protected function needs_restriction(): bool 
+    // Capability functionalities
+    public function get_all_capabilities_grouped(): array
     {
-        foreach ($this->auth_config['allowed_caps'] as $cap) 
+        global $wp_roles;
+        
+        $grouped = [
+            'roles' => [],
+            'post_types' => [],
+            'taxonomies' => [],
+            'core' => $this->get_core_capabilities()
+        ];
+        
+        // 1. Get capabilities from all roles
+        foreach ($wp_roles->roles as $role_name => $role_data) 
         {
-            if (current_user_can($cap)) return false;
+            if (!empty($role_data['capabilities'])) 
+            {
+                $grouped['roles'][$role_name] = array_keys($role_data['capabilities']);
+            }
         }
-
-        foreach ($this->auth_config['required_caps'] as $cap) 
+        
+        // 2. Get capabilities from post types
+        $post_types = get_post_types([], 'objects');
+        foreach ($post_types as $post_type) 
         {
-            if (!current_user_can($cap)) return true;
+            if (!empty($post_type->cap)) 
+            {
+                $caps = array_values((array) $post_type->cap);
+                $grouped['post_types'][$post_type->name] = array_unique($caps);
+            }
         }
-
-        return false;
-    }
-
-    // Helpers
-    private function use_cache(): mixed 
-    {
-        return $this->auth_config['cache_enabled'];
-    }
-
-    private function load_menus(): void 
-    {
-        if (!isset(self::$menu_cache['main'])) 
+        
+        // 3. Get capabilities from taxonomies
+        $taxonomies = get_taxonomies([], 'objects');
+        foreach ($taxonomies as $taxonomy) 
         {
-            global $menu, $submenu;
-            self::$menu_cache['main'] = $menu;
-            self::$submenu_cache = $submenu;
+            if (!empty($taxonomy->cap)) 
+            {
+                $caps = array_values((array) $taxonomy->cap);
+                $grouped['taxonomies'][$taxonomy->name] = array_unique($caps);
+            }
         }
+        
+        return $grouped;
     }
-
-    private function format_menu_item($item, $slug) 
+    
+    /**
+     * Get WordPress core capabilities
+     */
+    protected function get_core_capabilities(): array
     {
         return [
-            'title'        => $item[0],
-            'capability'   => $item[1],
-            'slug'         => $slug,
-            'encoded_slug' => $this->encode_slug($slug)
+            'activate_plugins', 'create_users', 'delete_plugins', 'delete_themes',
+            'delete_users', 'edit_dashboard', 'edit_files', 'edit_plugins',
+            'edit_theme_options', 'edit_themes', 'edit_users', 'export',
+            'import', 'install_plugins', 'install_themes', 'list_users',
+            'manage_options', 'promote_users', 'remove_users', 'switch_themes',
+            'update_core', 'update_plugins', 'update_themes',
+            'manage_categories', 'moderate_comments', 'unfiltered_html',
+            'upload_files', 'read', 'read_private_pages', 'read_private_posts',
+            'edit_posts', 'edit_others_posts', 'edit_published_posts',
+            'publish_posts', 'delete_posts', 'delete_others_posts',
+            'delete_published_posts', 'delete_private_posts', 'edit_private_posts',
+            'publish_pages', 'edit_pages', 'edit_others_pages', 'edit_published_pages',
+            'delete_pages', 'delete_others_pages', 'delete_published_pages',
+            'delete_private_pages', 'edit_private_pages'
         ];
-    }
-
-    private function encode_slug($slug): string 
-    {
-        return base64_encode($slug);
     }
 }
