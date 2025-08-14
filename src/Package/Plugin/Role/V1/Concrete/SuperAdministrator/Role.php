@@ -22,13 +22,14 @@ class Role extends BaseRole
         $this->capabilities = array_fill_keys($capability_names, true);
         //echo "<pre>";print_r($this->capabilities);echo "</pre>";exit;
         $this->allowed_menus = array_merge([],[
+            base64_encode('admin.php?page=flex-efinance') => true,
             base64_encode('admin.php?page=flex-eland') => true,
             //base64_encode('edit.php?post_type=fldeed') => true // Add as main menu
         ]);
 
         $this->allowed_submenus = array_merge([],[
-            base64_encode('admin.php?page=flex-eland') => true,    
-            base64_encode('edit.php?post_type=fldeed') => true, // Main listing
+            base64_encode('admin.php?page=flex-efinance') => true,    
+            base64_encode('edit.php?post_type=ftransa') => true, // Main listing
             //base64_encode('post-new.php?post_type=fldeed') => true // Add new
         ]);
         
