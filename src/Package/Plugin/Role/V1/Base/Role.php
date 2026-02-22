@@ -16,22 +16,21 @@ abstract class Role implements RoleContract
     public $capabilities = [];
     public $default_capabilities = [];
     public $allowed_menu = [];
-    public $allowed_submenu = [];   
+    public $allowed_submenu = [];    
+    public $allowed_posttypes = [];
     public $wp_role;
     public $redirect_url;
 
+    public function __construct()
+    {
+        $this->init();
+    }
+
     abstract public function init(array $data = []): static;
+
     public function register(): void
     {
         $this->create_role();
-    }
-
-    public function get_default_capabilities():array
-    {
-        return $this->default_capabilities = [
-            'read' => true,
-            'view_admin_dashboard' => true,
-        ];
     }
     
     public function create_role(): void
@@ -39,7 +38,7 @@ abstract class Role implements RoleContract
         $this->remove_all_capabilities();
 
         $this->remove_role();
-        //echo "<pre>";print_r($this->capabilities);echo "</pre>";exit;
+
         // Add the role with capabilities
         add_role($this->role_slug, $this->display_name, $this->capabilities);
         
@@ -77,6 +76,14 @@ abstract class Role implements RoleContract
         {
             remove_role($this->role_slug);
         }
+    }
+
+    public function get_default_capabilities():array
+    {
+        return $this->default_capabilities = [
+            'read' => true,
+            'view_admin_dashboard' => true,
+        ];
     }
 
     public function add_capabilities(array $capabilities = []): void
@@ -258,19 +265,7 @@ abstract class Role implements RoleContract
                 'unfiltered_html' => true,
                 'upload_files' => true
             ],
-            'post_capabilities' => [
-                'read' => true,
-                'edit_posts' => true,
-                'edit_others_posts' => true,
-                'edit_published_posts' => true,
-                'edit_private_posts' => true,
-                'publish_posts' => true,
-                'delete_posts' => true,
-                'delete_others_posts' => true,
-                'delete_published_posts' => true,
-                'delete_private_posts' => true,
-                'read_private_posts' => true
-            ],
+            'post_capabilities' => $this->get_core_posttype_capabilities(),
             'page_capabilities' => [
                 'edit_pages' => true,
                 'edit_others_pages' => true,
@@ -286,13 +281,15 @@ abstract class Role implements RoleContract
         ];
     }
 
-    public function get_core_post_type_capabilities(): array
+    public function get_core_posttype_capabilities(): array
     {
         return [
 
             'read' => true,
             'read_post' => true,
             'read_private_posts' => true,
+
+            "create_posts" => true,
 
             'edit_post' => true,
             'edit_posts' => true,
@@ -308,5 +305,202 @@ abstract class Role implements RoleContract
             'delete_published_posts' => true,
             'delete_others_posts' => true,
         ];
+    }
+
+    public function map_core_posttype_capabilities(): array
+    {
+        return [
+
+            'read' => true,
+            'read_post' => true,
+            'read_private_posts' => true,
+
+            "create_posts" => true,
+
+            'edit_post' => true,
+            'edit_posts' => true,
+            'edit_others_posts' => true,
+            'edit_private_posts' => true,
+            'edit_published_posts' => true,
+
+            'publish_posts' => true,
+            
+            'delete_post' => true,            
+            'delete_posts' => true,
+            'delete_private_posts' => true,
+            'delete_published_posts' => true,
+            'delete_others_posts' => true,
+        ];
+    }
+
+    public function map_custom_posttype_capabilities(string $posttype, string $posttype_singular_base, string $posttype_plural_base): array
+    {
+        return [ 
+            $posttype => [
+
+                "read" => true,
+                "read_{$posttype_singular_base}" => true,
+                "read_private_{$posttype_plural_base}" => true,
+
+                "create_{$posttype_plural_base}" => true,
+
+                "edit_{$posttype_singular_base}" => true,
+                "edit_{$posttype_plural_base}" => true,
+                "edit_others_{$posttype_plural_base}" => true,
+                "edit_private_{$posttype_plural_base}" => true,
+                "edit_published_{$posttype_plural_base}" => true,
+
+                "publish_{$posttype_plural_base}" => true,
+                
+                "delete_{$posttype_singular_base}" => true,            
+                "delete_{$posttype_plural_base}" => true,
+                "delete_private_{$posttype_plural_base}" => true,
+                "delete_published_{$posttype_plural_base}" => true,
+                "delete_others_{$posttype_plural_base}" => true,
+        
+            ]
+        ];
+    }
+
+    public function map_custom_posttype_capabilities_to_core(string $posttype_singular_base, string $posttype_plural_base): array
+    {
+        return [
+
+            'read' => true,
+            'read_post' => "read_{$posttype_singular_base}",
+            'read_private_posts' => "read_private_{$posttype_plural_base}",
+
+            "create_posts" => true,
+
+            'edit_post' => "edit_{$posttype_singular_base}",
+            'edit_posts' => "edit_{$posttype_plural_base}",
+            'edit_others_posts' => "edit_others_{$posttype_plural_base}",
+            'edit_private_posts' => "edit_private_{$posttype_plural_base}",
+            'edit_published_posts' => "edit_published_{$posttype_plural_base}",
+
+            'publish_posts' => "publish_{$posttype_plural_base}",
+            
+            'delete_post' => "delete_{$posttype_singular_base}",           
+            'delete_posts' => "delete_{$posttype_plural_base}",
+            'delete_private_posts' => "delete_private_{$posttype_plural_base}",
+            'delete_published_posts' => "delete_published_{$posttype_plural_base}",
+            'delete_others_posts' => "delete_others_{$posttype_plural_base}",
+        ];
+
+    }
+
+    public function format_allowed_posttype_capabilities( string $mode = "replace", string $output_option = "without_key"): array
+    {
+        $formatted_allowed_posttype_capabilities = [];
+
+        if(is_array($this->allowed_posttypes) && count($this->allowed_posttypes))
+        {
+            foreach ($this->allowed_posttypes as $key => $value) 
+            {
+                $singular_base = $value['singular_base'];
+                $plural_base = $value['plural_base'];
+
+                if($mode == "replace" && $output_option == "with_key")
+                {
+                    $temporary = [];
+                    $temporary[$key] = [
+                        "read" => ($value['capabilities']['read'] == true) ? true : false,
+                        "read_{$singular_base}" => ($value['capabilities']['read_post'] == true) ? true : false,
+                        "read_private_{$plural_base}" => ($value['capabilities']['read_private_posts'] == true) ? true : false,
+                        
+                        "create_{$plural_base}" => ($value['capabilities']['create_posts'] == true) ? true : false,
+                        
+                        "edit_{$singular_base}" => ($value['capabilities']['edit_post'] == true) ? true : false,
+                        "edit_{$plural_base}" => ($value['capabilities']['edit_posts'] == true) ? true : false,
+                        "edit_others_{$plural_base}" => ($value['capabilities']['edit_others_posts'] == true) ? true : false,
+                        "edit_private_{$plural_base}" => ($value['capabilities']['edit_private_posts'] == true) ? true : false,
+                        "edit_published_{$plural_base}" => ($value['capabilities']['edit_published_posts'] == true) ? true : false,
+                        
+                        "publish_{$plural_base}" => ($value['capabilities']['publish_posts'] == true) ? true : false,
+                        
+                        "delete_{$singular_base}" => ($value['capabilities']['delete_post'] == true) ? true : false,
+                        "delete_{$plural_base}" => ($value['capabilities']['delete_posts'] == true) ? true : false,
+                        "delete_private_{$plural_base}" => ($value['capabilities']['delete_private_posts'] == true) ? true : false,
+                        "delete_published_{$plural_base}" => ($value['capabilities']['delete_published_posts'] == true) ? true : false,
+                        "delete_others_{$plural_base}" => ($value['capabilities']['delete_others_posts'] == true) ? true : false,
+                    ];
+
+                    $formatted_allowed_posttype_capabilities = array_merge(
+                        $formatted_allowed_posttype_capabilities,
+                        $temporary
+                    );
+                    
+                }
+                elseif($mode == "replace" && $output_option == "without_key") 
+                {
+                    $formatted_allowed_posttype_capabilities = array_merge(
+                        $formatted_allowed_posttype_capabilities,
+                        [
+                            "read" => ($value['capabilities']['read'] == true) ? true : false,
+                            "read_{$singular_base}" => ($value['capabilities']['read_post'] == true) ? true : false,
+                            "read_private_{$plural_base}" => ($value['capabilities']['read_private_posts'] == true) ? true : false,
+                            
+                            "create_{$plural_base}" => ($value['capabilities']['create_posts'] == true) ? true : false,
+                            
+                            "edit_{$singular_base}" => ($value['capabilities']['edit_post'] == true) ? true : false,
+                            "edit_{$plural_base}" => ($value['capabilities']['edit_posts'] == true) ? true : false,
+                            "edit_others_{$plural_base}" => ($value['capabilities']['edit_others_posts'] == true) ? true : false,
+                            "edit_private_{$plural_base}" => ($value['capabilities']['edit_private_posts'] == true) ? true : false,
+                            "edit_published_{$plural_base}" => ($value['capabilities']['edit_published_posts'] == true) ? true : false,
+                            
+                            "publish_{$plural_base}" => ($value['capabilities']['publish_posts'] == true) ? true : false,
+                            
+                            "delete_{$singular_base}" => ($value['capabilities']['delete_post'] == true) ? true : false,
+                            "delete_{$plural_base}" => ($value['capabilities']['delete_posts'] == true) ? true : false,
+                            "delete_private_{$plural_base}" => ($value['capabilities']['delete_private_posts'] == true) ? true : false,
+                            "delete_published_{$plural_base}" => ($value['capabilities']['delete_published_posts'] == true) ? true : false,
+                            "delete_others_{$plural_base}" => ($value['capabilities']['delete_others_posts'] == true) ? true : false,
+                        ]
+                    );
+                }              
+                
+            }
+            
+        }
+        
+        return $formatted_allowed_posttype_capabilities;
+    }
+
+    public function add_allowed_posttype_capabilities_to_role(string $mode = 'replace'): void
+    {
+        $formatted_allowed_posttype_capabilities = $this->format_allowed_posttype_capabilities('replace');
+
+        if(is_array($formatted_allowed_posttype_capabilities) && count($formatted_allowed_posttype_capabilities))
+        {
+            $role = get_role($this->role_slug);
+
+            if ($mode == 'replace') 
+            {            
+                foreach ($formatted_allowed_posttype_capabilities as $posttype => $capabilities) 
+                {
+                    if(is_array($capabilities) && count($capabilities))
+                    {
+                        foreach($capabilities as $capability => $grant)
+                        {
+
+                            if ($grant) 
+                            {
+                                $role->add_cap($capability);
+                            }
+                            else
+                            {
+                                $role->remove_cap($capability);
+                            }
+                            
+                        }
+                        
+                    }                
+                    
+                }
+                
+            }
+            
+        }
+        
     }
 }

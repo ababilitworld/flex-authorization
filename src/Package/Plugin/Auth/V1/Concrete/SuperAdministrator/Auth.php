@@ -52,7 +52,8 @@ class Auth extends BaseAuth
     
     public function grantSuperAdminCapabilities(array $allcaps, array $caps, array $args, \WP_User $user): array
     {
-        if (in_array('super-admin', $user->roles)) {
+        if (in_array('super-admin', $user->roles)) 
+        {
             // Grant all capabilities
             $allcaps = array_fill_keys(array_keys($allcaps), true);
         }

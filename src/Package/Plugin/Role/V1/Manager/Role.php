@@ -38,7 +38,7 @@ class  Role extends BaseManager
 
             if ($item_instance instanceof RoleContract) 
             {
-                $item_instance->init()->register();
+                $item_instance->register();
             }
         }
     }

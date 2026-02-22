@@ -15,23 +15,63 @@ class Role extends BaseRole
         $this->display_name = 'Super Admin';
         
         $this->remove_role();
-        // Get all capability names
-        $capability_names = $this->get_all_possible_capabilities();
         
-        // Transform into associative array with all capabilities enabled
-        $this->capabilities = array_fill_keys($capability_names, true);
-        //echo "<pre>";print_r($this->capabilities);echo "</pre>";exit;
         $this->allowed_menus = array_merge([],[
             base64_encode('admin.php?page=flex-efinance') => true,
             base64_encode('admin.php?page=flex-eland') => true,
+            base64_encode('edit.php?post_type=ftranx') => true,
             //base64_encode('edit.php?post_type=fldeed') => true // Add as main menu
         ]);
 
         $this->allowed_submenus = array_merge([],[
             base64_encode('admin.php?page=flex-efinance') => true,    
-            base64_encode('edit.php?post_type=ftransa') => true, // Main listing
+            base64_encode('edit.php?post_type=ftranx') => true, // Main listing
             //base64_encode('post-new.php?post_type=fldeed') => true // Add new
         ]);
+
+        $this->allowed_posttypes = array_merge([],
+            [
+                'ftranx' => [
+                    'post_type' => 'ftranx',
+                    'singular_base' => 'ftranx',
+                    'plural_base' => 'ftranxes',
+                    'capability_type' => ['ftranx','ftranxes'],
+                    'capabilities'=> [
+                        'read' => true,
+                        'read_post' => true,
+                        'read_private_posts' => true,
+
+                        "create_posts" => true,
+
+                        'edit_post' => true,
+                        'edit_posts' => true,
+                        'edit_others_posts' => true,
+                        'edit_private_posts' => true,
+                        'edit_published_posts' => true,
+
+                        'publish_posts' => true,
+                        
+                        'delete_post' => true,            
+                        'delete_posts' => true,
+                        'delete_private_posts' => true,
+                        'delete_published_posts' => true,
+                        'delete_others_posts' => true,
+                    ],
+                ]
+            ]
+
+        );
+        
+        $capability_names = $this->get_all_possible_capabilities();
+        $all_possible_capabilities = array_fill_keys($capability_names, true);
+        
+        $this->capabilities = array_merge(
+            $this->capabilities, 
+            $all_possible_capabilities,
+            $this->format_allowed_posttype_capabilities('replace','without_key')
+        );
+
+        //echo "<pre>";print_r($this->capabilities);echo "</pre>";exit;
         
         $this->init_hooks();
         return $this;
@@ -228,5 +268,10 @@ class Role extends BaseRole
             wp_safe_redirect($redirect_url);
             exit;
         }
+    }
+
+    public function set_post_type_permissions(): void
+    {
+        $this->capabilities = $this->map_post_type_capabilities('ftrx','ftrxes');
     }
 }
