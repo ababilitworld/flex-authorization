@@ -20,13 +20,13 @@ class Role extends BaseRole
             base64_encode('admin.php?page=flex-efinance') => true,
             base64_encode('admin.php?page=flex-eland') => true,
             base64_encode('edit.php?post_type=ftranx') => true,
-            //base64_encode('edit.php?post_type=fldeed') => true // Add as main menu
+            base64_encode('edit.php?post_type=fldeed') => true
         ]);
 
         $this->allowed_submenus = array_merge([],[
             base64_encode('admin.php?page=flex-efinance') => true,    
-            base64_encode('edit.php?post_type=ftranx') => true, // Main listing
-            //base64_encode('post-new.php?post_type=fldeed') => true // Add new
+            base64_encode('edit.php?post_type=ftranx') => true,
+            base64_encode('post-new.php?post_type=fldeed') => true
         ]);
 
         $this->allowed_posttypes = array_merge([],
@@ -57,6 +57,34 @@ class Role extends BaseRole
                         'delete_published_posts' => true,
                         'delete_others_posts' => true,
                     ],
+                ],
+
+                'fldeed' => [
+                    'post_type' => 'fldeed',
+                    'singular_base' => 'fldeed',
+                    'plural_base' => 'fldeeds',
+                    'capability_type' => ['fldeed','fldeeds'],
+                    'capabilities'=> [
+                        'read' => true,
+                        'read_post' => true,
+                        'read_private_posts' => true,
+
+                        "create_posts" => true,
+
+                        'edit_post' => true,
+                        'edit_posts' => true,
+                        'edit_others_posts' => true,
+                        'edit_private_posts' => true,
+                        'edit_published_posts' => true,
+
+                        'publish_posts' => true,
+                        
+                        'delete_post' => true,            
+                        'delete_posts' => true,
+                        'delete_private_posts' => true,
+                        'delete_published_posts' => true,
+                        'delete_others_posts' => true,
+                    ],
                 ]
             ]
 
@@ -64,7 +92,7 @@ class Role extends BaseRole
         
         $capability_names = $this->get_all_possible_capabilities();
         $all_possible_capabilities = array_fill_keys($capability_names, true);
-        
+        //echo "<pre>";print_r($all_possible_capabilities);echo "</pre>";exit;
         $this->capabilities = array_merge(
             $this->capabilities, 
             $all_possible_capabilities,
